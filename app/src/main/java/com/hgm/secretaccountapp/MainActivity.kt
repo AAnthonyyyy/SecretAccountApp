@@ -95,32 +95,28 @@ fun AccountScreen(
       val authorized = remember {
             mutableStateOf(false)
       }
+      // 执行身份验证
       val authorize: () -> Unit = {
             BiometricHelper.showBiometricPrompt(activity) {
                   authorized.value = true
             }
       }
-
-      // 声明周期监听
-      OnLifecycleEvent { owner, event ->
-            if (event == Lifecycle.Event.ON_PAUSE) {
-                  authorized.value = false
-            }
-            //if (event == Lifecycle.Event.ON_RESUME) {
-            //      authorize()
-            //}
-      }
-
       // 模糊值
       val blurValue by animateDpAsState(
             targetValue = if (authorized.value) 0.dp else 15.dp,
             animationSpec = tween(500)
       )
 
-      LaunchedEffect(true) {
-            //delay(1000)
-            authorize()
+
+      // 监听应用的声明周期
+      OnLifecycleEvent { _, event ->
+            when (event) {
+                  Lifecycle.Event.ON_RESUME -> authorize()
+                  Lifecycle.Event.ON_PAUSE -> authorized.value = false
+                  else -> Unit
+            }
       }
+
 
 
       Scaffold(
@@ -281,19 +277,18 @@ fun AccountScreen(
 }
 
 @Composable
-fun OnLifecycleEvent(onEvent: (owner: LifecycleOwner, event: Lifecycle.Event) -> Unit) {
-      val eventHandler = rememberUpdatedState(newValue = onEvent)
-      val lifecycleOwner = rememberUpdatedState(newValue = LocalLifecycleOwner.current)
-
-      DisposableEffect(lifecycleOwner.value) {
-            val lifecycle = lifecycleOwner.value.lifecycle
-            val observer = LifecycleEventObserver { owner, event ->
-                  eventHandler.value(owner, event)
+fun OnLifecycleEvent(
+      lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current,
+      onEvent: (LifecycleOwner, Lifecycle.Event) -> Unit
+) {
+      DisposableEffect(lifecycleOwner) {
+            val observer = LifecycleEventObserver { source, event ->
+                  onEvent(source, event)
             }
-            lifecycle.addObserver(observer)
+            lifecycleOwner.lifecycle.addObserver(observer)
 
             onDispose {
-                  lifecycle.removeObserver(observer)
+                  lifecycleOwner.lifecycle.removeObserver(observer)
             }
       }
 }
