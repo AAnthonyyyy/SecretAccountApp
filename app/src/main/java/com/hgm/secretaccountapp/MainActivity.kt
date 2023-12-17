@@ -1,10 +1,6 @@
 package com.hgm.secretaccountapp
 
-import android.app.Activity
-import android.content.Context
-import android.content.ContextWrapper
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.animation.core.animateDpAsState
@@ -47,6 +43,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.draw.blur
@@ -55,6 +52,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
@@ -98,7 +96,7 @@ fun AccountScreen(
             mutableStateOf(false)
       }
       val authorize: () -> Unit = {
-            BiometricHelper.showPrompt(activity) {
+            BiometricHelper.showBiometricPrompt(activity) {
                   authorized.value = true
             }
       }
@@ -108,9 +106,9 @@ fun AccountScreen(
             if (event == Lifecycle.Event.ON_PAUSE) {
                   authorized.value = false
             }
-            if (event == Lifecycle.Event.ON_RESUME) {
-                  authorize()
-            }
+            //if (event == Lifecycle.Event.ON_RESUME) {
+            //      authorize()
+            //}
       }
 
       // 模糊值
@@ -120,6 +118,7 @@ fun AccountScreen(
       )
 
       LaunchedEffect(true) {
+            //delay(1000)
             authorize()
       }
 
@@ -173,22 +172,24 @@ fun AccountScreen(
                               ) {
                                     Row(
                                           modifier = Modifier.fillMaxWidth(),
-                                          horizontalArrangement = Arrangement.SpaceBetween
+                                          horizontalArrangement = Arrangement.SpaceBetween,
+                                          verticalAlignment = Alignment.CenterVertically
                                     ) {
                                           Column {
                                                 Text(
                                                       text = it.type,
-                                                      style = MaterialTheme.typography.titleLarge,
+                                                      fontSize = 20.sp,
+                                                      color = Color.White
+                                                )
+                                                Spacer(modifier = Modifier.height(12.dp))
+                                                Text(
+                                                      text = "账号：${it.account}",
+                                                      fontSize = 15.sp,
                                                       color = Color.White
                                                 )
                                                 Text(
-                                                      text = it.account,
-                                                      style = MaterialTheme.typography.bodyMedium,
-                                                      color = Color.White
-                                                )
-                                                Text(
-                                                      text = it.password,
-                                                      style = MaterialTheme.typography.bodyMedium,
+                                                      text = "密码：${it.password}",
+                                                      fontSize = 15.sp,
                                                       color = Color.White
                                                 )
                                           }
@@ -222,15 +223,9 @@ fun AccountScreen(
                                           .padding(16.dp),
                                     verticalArrangement = Arrangement.spacedBy(12.dp)
                               ) {
-                                    var type by remember {
-                                          mutableStateOf("")
-                                    }
-                                    var account by remember {
-                                          mutableStateOf("")
-                                    }
-                                    var password by remember {
-                                          mutableStateOf("")
-                                    }
+                                    var type by remember { mutableStateOf("") }
+                                    var account by remember { mutableStateOf("") }
+                                    var password by remember { mutableStateOf("") }
 
                                     OutlinedTextField(
                                           value = type,
@@ -270,11 +265,7 @@ fun AccountScreen(
                                     )
                                     Button(
                                           onClick = {
-                                                viewModel.addAccount(
-                                                      type,
-                                                      account,
-                                                      password
-                                                )
+                                                viewModel.addAccount(type, account, password)
                                                 showDialog = false
                                           },
                                           modifier = Modifier.fillMaxWidth(),
@@ -305,15 +296,4 @@ fun OnLifecycleEvent(onEvent: (owner: LifecycleOwner, event: Lifecycle.Event) ->
                   lifecycle.removeObserver(observer)
             }
       }
-}
-
-
-fun Context.findActivity(): Activity {
-      var context = this
-      while (context is ContextWrapper) {
-            if (context is Activity) return context
-            context = context.baseContext
-      }
-
-      throw IllegalStateException("cannot find activity")
 }

@@ -1,59 +1,56 @@
 package com.hgm.secretaccountapp
 
+import android.util.Log
 import androidx.biometric.BiometricPrompt
 import androidx.core.content.ContextCompat
-import androidx.activity.ComponentActivity
 import androidx.appcompat.app.AppCompatActivity
-import androidx.fragment.app.FragmentActivity
+import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG
+import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_WEAK
+import androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL
 
-/**
- * @author：HGM
- * @created：2023/12/15 0015
- * @description：
- **/
+
 object BiometricHelper {
-
-      /** 创建生物识别提示  **/
-      private fun createBiometricPrompt(
-            activity: AppCompatActivity,
-            processSuccess: (BiometricPrompt.AuthenticationResult) -> Unit
-      ): BiometricPrompt {
-            val executor = ContextCompat.getMainExecutor(activity)
-
-            // 传递成功的回调出去
-            val callback = object : BiometricPrompt.AuthenticationCallback() {
-                  override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
-                        super.onAuthenticationError(errorCode, errString)
-                  }
-
-                  override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
-                        super.onAuthenticationSucceeded(result)
-                        processSuccess(result)
-                  }
-
-                  override fun onAuthenticationFailed() {
-                        super.onAuthenticationFailed()
-                  }
-            }
-            return BiometricPrompt(activity, executor, callback)
-      }
 
       /** 创建提示信息  **/
       private fun createPromptInfo(): BiometricPrompt.PromptInfo =
             BiometricPrompt.PromptInfo.Builder()
-                  .apply {
-                        setTitle("SecretAccount App")
-                        setDescription("使用你的指纹或者面部来解锁应用")
-                        setConfirmationRequired(true)
-                        setNegativeButtonText("取消")
-                  }.build()
+                  .setTitle("SecretAccountApp")
+                  .setDescription("使用你的指纹或者面部来验证你的身份")
+                  .setAllowedAuthenticators(BIOMETRIC_STRONG or BIOMETRIC_WEAK or DEVICE_CREDENTIAL)
+                  .build()
+      //setConfirmationRequired(true)
+      //setNegativeButtonText("取消")
 
 
-      /** 显示验证框  **/
-      fun showPrompt(activity: AppCompatActivity, onSuccess: () -> Unit) {
-            createBiometricPrompt(activity = activity) {
-                  onSuccess()
+      /** 创建生物识别提示  **/
+      fun showBiometricPrompt(
+            activity: AppCompatActivity,
+            onSuccess: (BiometricPrompt.AuthenticationResult) -> Unit
+      ) {
+            val executor = ContextCompat.getMainExecutor(activity)
+            val callback = object : BiometricPrompt.AuthenticationCallback() {
+                  override fun onAuthenticationError(
+                        errorCode: Int,
+                        errString: CharSequence
+                  ) {
+                        super.onAuthenticationError(errorCode, errString)
+                        // 处理身份验证错误
+                        Log.e("HGM", "onAuthenticationError: $errString")
+                  }
+
+                  override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                        super.onAuthenticationSucceeded(result)
+                        // 处理身份验证成功
+                        onSuccess(result)
+                  }
+
+                  override fun onAuthenticationFailed() {
+                        super.onAuthenticationFailed()
+                        // 处理身份验证失败
+                        Log.e("HGM", "onAuthenticationFailed: 验证失败")
+                  }
             }
-                  .authenticate(createPromptInfo())
+
+            return BiometricPrompt(activity, executor, callback).authenticate(createPromptInfo())
       }
 }
